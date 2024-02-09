@@ -2,7 +2,7 @@ import { BookResponse, apiUrl, getToken, getUserInfo } from "@/utils/config";
 import { Button, Card, Checkbox, Tag, notification, Input } from "antd";
 import type { CheckboxProps } from "antd";
 import axios from "axios";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export async function getStaticProps() {
   const tags = await axios({
@@ -22,7 +22,7 @@ export async function getStaticProps() {
       "content-type": `application/json`,
       "Access-Control-Allow-Origin": "*",
     },
-    url: `${apiUrl}book/list`,
+    url: `${apiUrl}book/list?page=1`,
   })
     .then((res) => res.data)
     .catch((err) => err);
@@ -39,6 +39,10 @@ export default function Home({ tags, books }: any) {
   const { Meta } = Card;
   const { Search } = Input;
   const [data, setData] = useState(books);
+  const [loading, setLoading] = useState(false);
+  const [pageNumber, setPageNumber] = useState(1);
+  const endOfListRef = useRef<HTMLDivElement>(null);
+
   const userInfo = getUserInfo();
   const token = getToken();
 
@@ -46,28 +50,6 @@ export default function Home({ tags, books }: any) {
     title: "",
     writer: "",
     tags: [""],
-  };
-
-  const handleChange = async (e: any) => {
-    filterObj.title = e.target.value;
-    filterObj.writer = e.target.value;
-
-    const response = await axios({
-      method: "POST",
-      headers: {
-        "content-type": `application/json`,
-        "Access-Control-Allow-Origin": "*",
-      },
-      url: `${apiUrl}book/list`,
-      data: {
-        title: filterObj.title,
-        writer: filterObj.writer,
-        tags: filterObj.tags.shift(),
-      },
-    })
-      .then((res) => res.data)
-      .catch((err) => err);
-    setData(response.data);
   };
 
   const AddToCart = (id: number) => {
@@ -86,12 +68,7 @@ export default function Home({ tags, books }: any) {
       },
     })
       .then(async (res) => {
-        notification.open({
-          message: "Success",
-          description: "Added Book to cart",
-          type: "success",
-        });
-        return res.data;
+        res.data;
       })
       .catch((err) => {
         console.log("Error: ", err);
@@ -113,6 +90,64 @@ export default function Home({ tags, books }: any) {
     } else {
       filterObj.tags.push(e.target.value);
     }
+
+    loadMoreData();
+  };
+
+  const handleScroll = useCallback(() => {
+    if (
+      endOfListRef.current &&
+      window.innerHeight + window.scrollY >= endOfListRef.current.offsetTop
+    ) {
+      loadMoreData();
+    }
+  }, [data]);
+
+  useEffect(() => {
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [handleScroll]);
+
+  const loadMoreData = async () => {
+    if (!loading) {
+      setLoading(true);
+      setPageNumber((prevPageNumber) => prevPageNumber + 1);
+      const response = await fetchData(pageNumber);
+      if (response.data.length == 0) {
+        setData([]);
+      } else {
+        setData((prevData: any) => [...prevData, ...response]);
+      }
+      // }
+      setLoading(false);
+    }
+  };
+
+  const fetchData = async (page: number) => {
+    const response = await axios({
+      method: "POST",
+      headers: {
+        "content-type": `application/json`,
+        "Access-Control-Allow-Origin": "*",
+      },
+      url: `${apiUrl}book/list?page=${page}`,
+      data: {
+        title: filterObj.title,
+        writer: filterObj.writer,
+        tags: filterObj.tags.shift(),
+      },
+    })
+      .then((res) => res.data)
+      .catch((err) => err);
+    return response.data;
+  };
+
+  const handleChange = async (e: any) => {
+    filterObj.title = e.target.value;
+    filterObj.writer = e.target.value;
+
+    const response = await fetchData(1); // Reset to the first page when filtering
+    setData(response);
   };
 
   return (
@@ -148,7 +183,7 @@ export default function Home({ tags, books }: any) {
           <div className=" w-full md:col-span-4 pt-7 grid md:grid-cols-4 ">
             {data.map((value: BookResponse, index: number) => {
               return (
-                <div className=" col-span-1 m-4" key={index}>
+                <div ref={endOfListRef} className=" col-span-1 m-4" key={index}>
                   <Card
                     hoverable
                     cover={
