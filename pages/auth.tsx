@@ -199,18 +199,7 @@ function auth() {
             <Form.Item
               name="email"
               label={<span style={{ color: "#757575" }}>Email</span>}
-              rules={[
-                { required: true, message: "*Please enter email" },
-                // {
-                //   validator: (_, value) => {
-                //     if (value === "" || validateEmail(value)) {
-                //       return Promise.resolve();
-                //     } else {
-                //       return Promise.reject("*Please enter valid email");
-                //     }
-                //   },
-                // },
-              ]}
+              rules={[{ required: true, message: "*Please enter email" }]}
             >
               <Input placeholder="Eg. abebe@gmail.com" />
             </Form.Item>
@@ -231,26 +220,6 @@ function auth() {
               name="password"
               rules={[
                 { required: true, message: "*Please enter your password" },
-                // {
-                //   validator: (_, val) => {
-                //     if (
-                //       validator.isStrongPassword(val, {
-                //         minLength: 8,
-                //         minLowercase: 1,
-                //         minUppercase: 1,
-                //         minNumbers: 1,
-                //         minSymbols: 1,
-                //       })
-                //     ) {
-                //       return Promise.resolve("password is Strong");
-                //     } else {
-                //       return Promise.reject(
-                //         "Password must be at least 8 Characters and must contain at least 1 lowercase, 1 uppercase, 1 number, 1 special characters "
-                //       );
-                //     }
-                //     return Promise.resolve();
-                //   },
-                // },
               ]}
             >
               <Input.Password />
@@ -301,7 +270,7 @@ function auth() {
     },
   ];
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center">
+    <div className="flex flex-col items-center justify-center">
       <Tabs
         className=" md:min-h-[500px] md:min-w-[500px] bg-white p-10"
         defaultActiveKey="1"
